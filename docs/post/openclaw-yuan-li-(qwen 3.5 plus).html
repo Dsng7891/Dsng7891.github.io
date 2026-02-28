@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.svg"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="# OpenClaw 原理深度解析：AI 智能体如何'动手'操作电脑
+
+## 引言
+
+2025 年底，奥地利开发者彼得·斯坦伯格（Peter Steinberger）用 AI 工具在 10 天内打造出了一个革命性的开源项目——OpenClaw。">
+<meta property="og:title" content="openclaw原理(qwen 3.5 plus)">
+<meta property="og:description" content="# OpenClaw 原理深度解析：AI 智能体如何'动手'操作电脑
+
+## 引言
+
+2025 年底，奥地利开发者彼得·斯坦伯格（Peter Steinberger）用 AI 工具在 10 天内打造出了一个革命性的开源项目——OpenClaw。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://Dsng7891.github.io/post/openclaw-yuan-li-%28qwen%203.5%20plus%29.html">
+<meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
+<title>openclaw原理(qwen 3.5 plus)</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">openclaw原理(qwen 3.5 plus)</h1>
+<div class="title-right">
+    <a href="https://Dsng7891.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/Dsng7891/Dsng7891.github.io/issues/2" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><h1>OpenClaw 原理深度解析：AI 智能体如何"动手"操作电脑</h1>
+<h2>引言</h2>
+<p>2025 年底，奥地利开发者彼得·斯坦伯格（Peter Steinberger）用 AI 工具在 10 天内打造出了一个革命性的开源项目——OpenClaw。这个能让 AI 真正"动手"操作电脑的开源项目，在 GitHub 上三周狂揽 15 万星标，成为年度增长最快的开源项目之一。</p>
+<p>那么，OpenClaw 到底是什么？它是如何让 AI 从"对话框"变成能干的"活人同事"的？本文将深入解析 OpenClaw 的核心原理和架构设计。</p>
+<h2>什么是 OpenClaw？</h2>
+<p>OpenClaw 是一个开源的 AI 智能体（AI Agent）框架，它的核心能力是让 AI 能够<strong>主动执行任务</strong>并<strong>操作本地应用程序</strong>。与传统的聊天机器人不同，OpenClaw 不仅仅是回答问题，它能够：</p>
+<ul>
+<li>操作电脑上的各种应用程序</li>
+<li>执行文件管理、数据处理等任务</li>
+<li>与外部服务集成（如 Swiggy、支付宝、钉钉等）</li>
+<li>通过语音、命令行、图形界面等多种方式交互</li>
+</ul>
+<h2>核心架构：高代理架构（High Agency Architecture）</h2>
+<p>OpenClaw 采用了<strong>高代理架构</strong>，这是它与传统 AI 助手的本质区别。</p>
+<h3>传统 AI vs OpenClaw</h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>特性</th>
+<th>传统 AI（如 ChatGPT 网页版）</th>
+<th>OpenClaw</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>交互模式</td>
+<td>被动响应</td>
+<td>主动执行</td>
+</tr>
+<tr>
+<td>执行能力</td>
+<td>仅生成文本</td>
+<td>可操作本地应用</td>
+</tr>
+<tr>
+<td>自主性</td>
+<td>需要持续指令</td>
+<td>可独立完成任务</td>
+</tr>
+<tr>
+<td>比喻</td>
+<td>算盘（拨一下动一下）</td>
+<td>员工（给目标后自主完成）</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h3>架构层次</h3>
+<p>OpenClaw 的架构可以分为以下几个核心层次：</p>
+<pre class="notranslate"><code class="notranslate">┌─────────────────────────────────────┐
+│         用户交互层                   │
+│  (CLI / GUI / 语音 / Live Canvas)   │
+├─────────────────────────────────────┤
+│         AI 代理核心层                 │
+│    (提示词系统 / 记忆管理 / 决策)    │
+├─────────────────────────────────────┤
+│         Skills 扩展系统              │
+│    (插件 / 连接器 / 工具函数)        │
+├─────────────────────────────────────┤
+│         执行层                       │
+│  (本地应用控制 / 文件系统 / 网络)    │
+└─────────────────────────────────────┘
+</code></pre>
+<h2>技术栈解析</h2>
+<p>OpenClaw 采用了现代化的技术栈：</p>
+<h3>1. <strong>核心层：TypeScript + Node.js</strong></h3>
+<ul>
+<li>使用 TypeScript 保证类型安全</li>
+<li>Node.js 提供跨平台运行能力</li>
+<li>支持 Windows、macOS、Linux 等操作系统</li>
+</ul>
+<h3>2. <strong>嵌入式 Agent：Pi</strong></h3>
+<ul>
+<li>Pi 是 OpenClaw 的核心 AI 代理引擎</li>
+<li>负责理解用户意图、规划任务、执行决策</li>
+<li>集成了先进的提示词工程和记忆管理系统</li>
+</ul>
+<h3>3. <strong>多端支持</strong></h3>
+<ul>
+<li><strong>CLI（命令行界面）</strong>：适合开发者和高级用户</li>
+<li><strong>GUI（图形界面）</strong>：适合普通用户</li>
+<li><strong>语音唤醒</strong>：支持语音交互</li>
+<li><strong>Live Canvas</strong>：实时可视化界面</li>
+</ul>
+<h2>核心功能模块</h2>
+<h3>1. 提示词系统（Prompt System）</h3>
+<p>OpenClaw 的提示词系统经过精心设计，能够：</p>
+<ul>
+<li>理解复杂的任务描述</li>
+<li>将大任务分解为可执行的小步骤</li>
+<li>根据上下文调整行为策略</li>
+<li>处理错误和异常情况</li>
+</ul>
+<h3>2. 记忆管理（Memory Management）</h3>
+<p>OpenClaw 具备强大的记忆能力：</p>
+<ul>
+<li><strong>短期记忆</strong>：保存当前会话的上下文</li>
+<li><strong>长期记忆</strong>：存储用户偏好、历史操作等</li>
+<li><strong>工作记忆</strong>：跟踪任务执行状态</li>
+<li><strong>向量记忆</strong>：使用向量数据库进行语义检索</li>
+</ul>
+<h3>3. Skills 扩展系统</h3>
+<p>这是 OpenClaw 最强大的功能之一。Skills 系统允许：</p>
+<ul>
+<li><strong>插件化扩展</strong>：开发者可以轻松创建新技能</li>
+<li><strong>连接器</strong>：与第三方服务集成</li>
+<li><strong>工具函数</strong>：提供常用的操作函数</li>
+<li><strong>社区生态</strong>：全球开发者已创建超过 5000 个技能插件</li>
+</ul>
+<h4>Skills 的工作原理</h4>
+<div class="highlight highlight-source-ts"><pre class="notranslate"><span class="pl-c">// 示例：一个简化的 Skill 结构</span>
+<span class="pl-k">interface</span> <span class="pl-smi">Skill</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">name</span>: <span class="pl-smi">string</span><span class="pl-kos">;</span>
+  <span class="pl-c1">description</span>: <span class="pl-smi">string</span><span class="pl-kos">;</span>
+  <span class="pl-c1">parameters</span>: <span class="pl-smi">Parameter</span><span class="pl-kos">[</span><span class="pl-kos">]</span><span class="pl-kos">;</span>
+  <span class="pl-c1">execute</span>: <span class="pl-kos">(</span><span class="pl-s1">params</span>: <span class="pl-smi">any</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-smi">Promise</span><span class="pl-c1">&lt;</span><span class="pl-smi">Result</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+<span class="pl-kos">}</span>
+
+<span class="pl-c">// OpenClaw 通过以下步骤执行 Skill：</span>
+<span class="pl-c">// 1. AI 代理分析用户意图</span>
+<span class="pl-c">// 2. 匹配可用的 Skills</span>
+<span class="pl-c">// 3. 提取参数</span>
+<span class="pl-c">// 4. 调用执行函数</span>
+<span class="pl-c">// 5. 返回结果并反馈给用户</span></pre></div>
+<h3>4. 本地应用控制</h3>
+<p>OpenClaw 能够操作本地应用程序，这是通过以下技术实现的：</p>
+<ul>
+<li><strong>自动化框架集成</strong>：利用操作系统提供的自动化 API
+<ul>
+<li>Windows: UI Automation、PowerShell</li>
+<li>macOS: AppleScript、Automator</li>
+<li>Linux: D-Bus、xdotool</li>
+</ul>
+</li>
+<li><strong>键盘鼠标模拟</strong>：模拟真实用户操作</li>
+<li><strong>窗口管理</strong>：识别和操作应用程序窗口</li>
+<li><strong>剪贴板操作</strong>：读取和写入剪贴板内容</li>
+</ul>
+<h3>5. 文件系统操作</h3>
+<p>OpenClaw 具备完整的文件系统操作能力：</p>
+<ul>
+<li>文件读写</li>
+<li>目录管理</li>
+<li>文件搜索</li>
+<li>权限管理</li>
+</ul>
+<h2>工作流程</h2>
+<p>OpenClaw 的典型工作流程如下：</p>
+<pre class="notranslate"><code class="notranslate">1. 用户输入任务
+   ↓
+2. AI 代理理解意图
+   ↓
+3. 任务分解和规划
+   ↓
+4. 选择合适的 Skills
+   ↓
+5. 执行操作（调用 API/控制应用/操作文件等）
+   ↓
+6. 监控执行状态
+   ↓
+7. 处理错误和异常
+   ↓
+8. 返回结果给用户
+</code></pre>
+<h3>示例：发送钉钉消息</h3>
+<p>假设用户说："给张三发个钉钉消息，提醒他下午 3 点开会"</p>
+<p>OpenClaw 会：</p>
+<ol>
+<li><strong>理解意图</strong>：识别出这是一个"发送消息"的任务</li>
+<li><strong>提取参数</strong>：
+<ul>
+<li>接收人：张三</li>
+<li>内容：下午 3 点开会</li>
+<li>平台：钉钉</li>
+</ul>
+</li>
+<li><strong>选择 Skill</strong>：调用"钉钉消息发送器"插件</li>
+<li><strong>执行</strong>：
+<ul>
+<li>检查钉钉登录状态</li>
+<li>查找联系人"张三"</li>
+<li>发送消息</li>
+</ul>
+</li>
+<li><strong>反馈</strong>：告诉用户"已发送消息给张三"</li>
+</ol>
+<h2>安全性设计</h2>
+<p>作为一个能够操作系统的 AI 智能体，OpenClaw 非常重视安全性：</p>
+<h3>1. 权限控制</h3>
+<ul>
+<li>细粒度的权限管理</li>
+<li>敏感操作需要用户确认</li>
+<li>支持只读模式</li>
+</ul>
+<h3>2. 凭证管理</h3>
+<ul>
+<li>加密存储 API 密钥和凭证</li>
+<li>支持环境变量注入</li>
+<li>不记录敏感信息</li>
+</ul>
+<h3>3. 沙箱机制</h3>
+<ul>
+<li>限制文件访问范围</li>
+<li>网络请求白名单</li>
+<li>操作审计日志</li>
+</ul>
+<h3>4. 防止注入攻击</h3>
+<ul>
+<li>输入验证和过滤</li>
+<li>命令注入防护</li>
+<li>提示词注入检测</li>
+</ul>
+<h2>社区生态</h2>
+<p>OpenClaw 的快速发展离不开活跃的社区：</p>
+<ul>
+<li><strong>插件市场</strong>：超过 5000 个技能插件</li>
+<li><strong>文档中心</strong>：完善的开发文档和教程</li>
+<li><strong>Discord 社区</strong>：8900+ 成员交流</li>
+<li><strong>企业集成</strong>：阿里云、腾讯云等提供服务集成</li>
+</ul>
+<h2>与其他项目的对比</h2>
+<h3>OpenClaw vs IronClaw</h3>
+<ul>
+<li><strong>OpenClaw</strong>：开源、社区驱动、功能丰富</li>
+<li><strong>IronClaw</strong>：企业级、注重安全性、商业支持</li>
+</ul>
+<h3>OpenClaw vs 传统 RPA</h3>
+<ul>
+<li><strong>OpenClaw</strong>：AI 驱动、自然语言交互、灵活适应</li>
+<li><strong>传统 RPA</strong>：规则驱动、需要编程、流程固定</li>
+</ul>
+<h2>未来展望</h2>
+<p>OpenClaw 代表了 AI 智能体的发展方向：</p>
+<ol>
+<li><strong>更强大的自主性</strong>：从"工具"进化为"同事"</li>
+<li><strong>更广泛的集成</strong>：支持更多应用和服务</li>
+<li><strong>更好的用户体验</strong>：更自然的交互方式</li>
+<li><strong>更强的安全性</strong>：企业级安全保障</li>
+</ol>
+<h2>结语</h2>
+<p>OpenClaw 的出现标志着人机交互进入了一个新时代。它不再是一个被动的问答工具，而是一个能够主动执行任务、操作电脑、完成工作的 AI 智能体。通过开源和社区的力量，OpenClaw 正在重新定义自动化交互的新范式。</p>
+<p>正如项目名称"Claw"（爪子）所暗示的，它给了 AI 一只能真正"动手"的手，让 AI 从虚拟世界走向现实操作，成为我们工作和生活中的得力助手。</p>
+<hr>
+<p><strong>参考资料：</strong></p>
+<ul>
+<li>OpenClaw GitHub 仓库</li>
+<li>OpenClaw 官方文档</li>
+<li>社区技术文章和讨论</li>
+</ul>
+<p><strong>作者：</strong> Dsng120706<br>
+<strong>年份：</strong> 2025<br>
+<strong>许可：</strong> MIT</p></div>
+<div style="font-size:small;margin-top:8px;float:right;"></div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://Dsng7891.github.io">Dsng's blog</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行 "+diffDay+" 天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.disabled=true;
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","Dsng7891/Dsng7891.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+
+
+</html>
